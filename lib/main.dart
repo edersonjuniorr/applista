@@ -1,13 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => TarefaProvider(),
+      child: MyApp(),
+    ),
+  );
 }
 
 class Tarefa {
   String title;
 
   Tarefa(this.title);
+}
+
+class TarefaProvider extends ChangeNotifier {
+  List<Tarefa> _tasks = [];
+
+  List<Tarefa> get tasks => _tasks;
+
+  void addTarefa(Tarefa tarefa) {
+    _tasks.add(tarefa);
+    notifyListeners();
+  }
+
+  void removeTarefa(int index) {
+    _tasks.removeAt(index);
+    notifyListeners();
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -38,30 +60,22 @@ class MyApp extends StatelessWidget {
   }
 }
 
-
-class ListaTarefa extends StatefulWidget {
-  @override
-  _ListaTarefaState createState() => _ListaTarefaState();
-}
-
-class _ListaTarefaState extends State<ListaTarefa> {
-  List<Tarefa> tasks = [];
-
+class ListaTarefa extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    var tarefaProvider = Provider.of<TarefaProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Afazeres'),
       ),
       body: ListView.builder(
-        itemCount: tasks.length,
+        itemCount: tarefaProvider.tasks.length,
         itemBuilder: (context, index) {
           return Dismissible(
-            key: Key(tasks[index].title),
+            key: Key(tarefaProvider.tasks[index].title),
             onDismissed: (direction) {
-              setState(() {
-                tasks.removeAt(index);
-              });
+              tarefaProvider.removeTarefa(index);
             },
             background: Container(
               color: Colors.red,
@@ -70,20 +84,17 @@ class _ListaTarefaState extends State<ListaTarefa> {
               padding: EdgeInsets.only(right: 0.0),
             ),
             child: ListTile(
-              title: Text(tasks[index].title),
+              title: Text(tarefaProvider.tasks[index].title),
             ),
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.pushNamed(context, '/tarefa').then((outputTarefa) {
-            if (outputTarefa != null && outputTarefa is Tarefa) {
-              setState(() {
-                tasks.add(outputTarefa);
-              });
-            }
-          });
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AddTarefa()),
+          );
         },
         child: Icon(Icons.add),
       ),
@@ -96,6 +107,8 @@ class AddTarefa extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var tarefaProvider = Provider.of<TarefaProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Adicionar tarefa'),
@@ -116,10 +129,8 @@ class AddTarefa extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 if (tituloTarefa.text.isNotEmpty) {
-                  Navigator.pop(
-                    context,
-                    Tarefa(tituloTarefa.text),
-                  );
+                  tarefaProvider.addTarefa(Tarefa(tituloTarefa.text));
+                  Navigator.pop(context); // Corrigido aqui
                 }
               },
               child: Text('Concluído'),
